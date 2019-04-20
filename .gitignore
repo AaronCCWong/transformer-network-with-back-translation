@@ -6,3 +6,6 @@ __pycache__
 
 # OSX files
 .DS_Store
+
+data/cleaned
+data/raw
