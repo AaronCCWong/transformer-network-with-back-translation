@@ -5,10 +5,10 @@ from helpers import clone_layer
 from layer_norm import LayerNorm
 
 
-class Encoder(nn.Module):
+class Decoder(nn.Module):
     def __init__(self, stack_size):
-        super(Encoder, self).__init__()
-        self.layers = clone_layer(EncoderLayer(), stack_size)
+        super(Decoder, self).__init__()
+        self.layers = clone_layer(DecoderLayer, stack_size)
 
     def forward(self, input):
         for layer in layers:
@@ -16,11 +16,12 @@ class Encoder(nn.Module):
         return input
 
 
-class EncoderLayer(nn.Module):
+class DecoderLayer(nn.Module):
     def __init__(self, p_dropout=0.1):
-        super(EncoderLayer, self).__init__()
+        super(DecoderLayer, self).__init__()
         self.sub_layer1 = MultiHeadAttention()
-        self.sub_layer2 = FeedForwardLayer()
+        self.sub_layer2 = MultiHeadAttention()
+        self.sub_layer3 = FeedForwardLayer()
         self.layer_norm = LayerNorm()
         self.dropout = nn.Dropout(p_dropout)
 
@@ -30,5 +31,9 @@ class EncoderLayer(nn.Module):
         out = self.layer_norm(residual + out)
 
         residual = out
-        output = self.dropout(self.sub_layer2(out))
-        return self.layer_norm(residual + output)
+        out2 = self.dropout(self.sub_layer2(out))
+        out2 = self.layer_norm(residual + out2)
+
+        residual = out2
+        out3 = self.dropout(self.sub_layer3(out2))
+        return self.layer_norm(residual + out3)
