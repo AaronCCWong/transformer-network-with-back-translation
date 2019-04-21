@@ -4,13 +4,16 @@ from encoder import Encoder
 
 
 class Transformer(nn.Module):
-    def __init__(self, vocab_size, d_model=512):
+    def __init__(self, src_vocab_size, tgt_vocab_size, d_model=512):
         super(Transformer, self).__init__()
-        self.embedding = nn.Embedding(vocab_size, d_model)
+        self.src_embedding = nn.Embedding(src_vocab_size, d_model)
+        self.tgt_embedding = nn.Embedding(tgt_vocab_size, d_model)
         self.encoder = Encoder(6)
         self.decoder = Decoder(6)
         self.linear = nn.Linear(d_model, d_model)
         self.softmax = nn.Softmax()
 
-    def forward(self):
-        raise Exception("Not Implemented")
+    def forward(self, src, tgt, src_mask, tgt_mask):
+        out = self.src_embedding(src)
+        out = self.encoder(out, src_mask)
+        return self.decoder(out, src_mask, tgt, tgt_mask)
