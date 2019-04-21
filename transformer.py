@@ -15,5 +15,5 @@ class Transformer(nn.Module):
 
     def forward(self, src, tgt, src_mask, tgt_mask):
         out = self.src_embedding(src)
-        out = self.encoder(out, src_mask)
-        return self.decoder(out, src_mask, tgt, tgt_mask)
+        encoded_input = self.encoder(out, src_mask)
+        return self.decoder(src, encoded_input, src_mask, tgt, tgt_mask)

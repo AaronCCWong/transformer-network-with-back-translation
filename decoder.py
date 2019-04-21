@@ -9,9 +9,9 @@ class Decoder(nn.Module):
         super(Decoder, self).__init__()
         self.layers = clone_layer(DecoderLayer, stack_size)
 
-    def forward(self, input):
+    def forward(self, input, encoded_input, tgt_mask):
         for layer in layers:
-            input = layer(input)
+            input = layer(input, encoded_input, tgt_mask)
         return input
 
 
@@ -24,13 +24,13 @@ class DecoderLayer(nn.Module):
         self.layer_norm = nn.LayerNorm()
         self.dropout = nn.Dropout(p_dropout)
 
-    def forward(self, input):
+    def forward(self, input, encoded_input, mask=None):
         residual = input
-        out = self.dropout(self.sub_layer1(input))
+        out = self.dropout(self.sub_layer1(input, input, input, mask))
         out = self.layer_norm(residual + out)
 
         residual = out
-        out2 = self.dropout(self.sub_layer2(out))
+        out2 = self.dropout(self.sub_layer2(input, encoded_input, encoded_input, out))
         out2 = self.layer_norm(residual + out2)
 
         residual = out2
