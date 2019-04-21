@@ -2,7 +2,6 @@ import torch.nn as nn
 from attention import MultiHeadAttention
 from feed_forward import FeedForwardLayer
 from helpers import clone_layer
-from layer_norm import LayerNorm
 
 
 class Decoder(nn.Module):
@@ -22,7 +21,7 @@ class DecoderLayer(nn.Module):
         self.sub_layer1 = MultiHeadAttention()
         self.sub_layer2 = MultiHeadAttention()
         self.sub_layer3 = FeedForwardLayer()
-        self.layer_norm = LayerNorm()
+        self.layer_norm = nn.LayerNorm()
         self.dropout = nn.Dropout(p_dropout)
 
     def forward(self, input):
