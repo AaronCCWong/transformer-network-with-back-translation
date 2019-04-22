@@ -15,15 +15,16 @@ MAX_SEQ_LEN = 50
 MIN_WORD_FREQ = 2
 
 
-def train(model, epoch, train_iterator, optimizer, src_vocab, tgt_vocab, log_interval, writer):
+def train(model, epoch, train_iterator, optimizer, src_vocab, tgt_vocab, args, writer):
     model.train()
 
     losses = AverageMeter()
     for batch_idx, batch in enumerate(train_iterator):
-        src = batch.src.transpose(0, 1)
-        tgt = batch.tgt.transpose(0, 1)
+        device = args.device
+        src = batch.src.transpose(0, 1).to(device)
+        tgt = batch.tgt.transpose(0, 1).to(device)
         src_mask = padding_mask(src, src_vocab)
-        tgt_mask = padding_mask(tgt[:, :-1], src_vocab) & subsequent_mask(tgt[:, :-1])
+        tgt_mask = padding_mask(tgt[:, :-1], src_vocab) & subsequent_mask(tgt[:, :-1]).to(device)
 
         out = model(src, tgt[:, :-1], src_mask, tgt_mask)
         optimizer.zero_grad()
@@ -35,21 +36,21 @@ def train(model, epoch, train_iterator, optimizer, src_vocab, tgt_vocab, log_int
         optimizer.step()
 
         losses.update(loss.item(), src.size(0))
-        if batch_idx % log_interval == 0:
+        if batch_idx % args.log_interval == 0:
             print('Train Batch: [{0}/{1}]\t'
                     'Loss {loss.val:.4f} ({loss.avg:.4f})'.format(
                         batch_idx, len(train_iterator), loss=losses))
     writer.add_scalar('train_loss', losses.avg, epoch)
 
 
-def validate(model, epoch, val_iterator, src_vocab, tgt_vocab, log_interval, writer):
+def validate(model, epoch, val_iterator, src_vocab, tgt_vocab, args, writer):
     model.eval()
 
     losses = AverageMeter()
     with torch.no_grad():
         for batch_idx, batch in enumerate(val_iterator):
-            src = batch.src.transpose(0, 1)
-            tgt = batch.tgt.transpose(0, 1)
+            src = batch.src.transpose(0, 1).to(args.device)
+            tgt = batch.tgt.transpose(0, 1).to(args.device)
             src_mask = padding_mask(src, src_vocab)
             tgt_mask = padding_mask(tgt[:, :-1], src_vocab) & subsequent_mask(tgt[:, :-1])
 
@@ -59,7 +60,7 @@ def validate(model, epoch, val_iterator, src_vocab, tgt_vocab, log_interval, wri
                                    ignore_index=tgt_vocab.stoi[CONSTANTS['pad']])
 
             losses.update(loss.item(), src.size(0))
-            if batch_idx % log_interval == 0:
+            if batch_idx % args.log_interval == 0:
                 print('Validation Batch: [{0}/{1}]\t'
                       'Loss {loss.val:.4f} ({loss.avg:.4f})'.format(
                           batch_idx, len(val_iterator), loss=losses))
@@ -100,15 +101,20 @@ def run(args):
                                                                         batch_sizes=(32, 256, 256))
 
     print('Intstantiating model...')
-    model = Transformer(src_vocab_size, tgt_vocab_size)
+    device = args.device
+    model = Transformer(src_vocab_size, tgt_vocab_size, device=device)
+    model = model.to(device)
     print('Model instantiated!')
 
     optimizer = optim.Adam(model.parameters(), lr=args.lr, betas=(0.9, 0.98), eps=1e-9)
 
     print('Starting training...')
     for epoch in range(args.epochs):
-        train(model, epoch + 1, train_iterator, optimizer, src.vocab, tgt.vocab, args.log_interval, writer)
-        validate(model, epoch + 1, val_iterator, src.vocab, tgt.vocab, args.log_interval, writer)
+        train(model, epoch + 1, train_iterator, optimizer, src.vocab, tgt.vocab, args, writer)
+        validate(model, epoch + 1, val_iterator, src.vocab, tgt.vocab, args, writer)
+        model_file = 'model/model_' + str(epoch) + '.pth'
+        torch.save(model.state_dict(), model_file)
+        print('Saved model to ' + model_file)
     print('Finished training.')
 
 
@@ -121,4 +127,7 @@ if __name__ == "__main__":
     parser.add_argument('--lr', type=float, default=1e-4, metavar='LR',
                         help='learning rate of the decoder (default: 1e-4)')
 
-    run(parser.parse_args())
+    args = parser.parse_args()
+    args.device = torch.device("cuda:0" if torch.cuda.is_available() else 'cpu')
+
+    run(args)

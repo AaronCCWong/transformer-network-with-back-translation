@@ -7,15 +7,15 @@ from positional_encoder import PositionalEncoder
 
 
 class Transformer(nn.Module):
-    def __init__(self, src_vocab_size, tgt_vocab_size, d_model=512):
+    def __init__(self, src_vocab_size, tgt_vocab_size, d_model=512, device='cpu'):
         super(Transformer, self).__init__()
         self.d_model = d_model
 
         self.src_embedding = nn.Embedding(src_vocab_size, d_model)
         self.tgt_embedding = nn.Embedding(tgt_vocab_size, d_model)
-        self.positional_encoder = PositionalEncoder(d_model)
-        self.encoder = Encoder(6, d_model)
-        self.decoder = Decoder(6, d_model)
+        self.positional_encoder = PositionalEncoder(device, d_model)
+        self.encoder = Encoder(device, 6, d_model)
+        self.decoder = Decoder(device, 6, d_model)
         self.linear = nn.Linear(d_model, tgt_vocab_size)
         self.softmax = nn.Softmax()
 
