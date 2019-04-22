@@ -49,10 +49,11 @@ def validate(model, epoch, val_iterator, src_vocab, tgt_vocab, args, writer):
     losses = AverageMeter()
     with torch.no_grad():
         for batch_idx, batch in enumerate(val_iterator):
-            src = batch.src.transpose(0, 1).to(args.device)
-            tgt = batch.tgt.transpose(0, 1).to(args.device)
+            device = args.device
+            src = batch.src.transpose(0, 1).to(device)
+            tgt = batch.tgt.transpose(0, 1).to(device)
             src_mask = padding_mask(src, src_vocab)
-            tgt_mask = padding_mask(tgt[:, :-1], src_vocab) & subsequent_mask(tgt[:, :-1])
+            tgt_mask = padding_mask(tgt[:, :-1], src_vocab) & subsequent_mask(tgt[:, :-1]).to(device)
 
             out = model(src, tgt[:, :-1], src_mask, tgt_mask)
             labels = tgt[:, 1:].contiguous().view(-1)
@@ -112,7 +113,7 @@ def run(args):
     for epoch in range(args.epochs):
         train(model, epoch + 1, train_iterator, optimizer, src.vocab, tgt.vocab, args, writer)
         validate(model, epoch + 1, val_iterator, src.vocab, tgt.vocab, args, writer)
-        model_file = 'model/model_' + str(epoch) + '.pth'
+        model_file = 'models/model_' + str(epoch) + '.pth'
         torch.save(model.state_dict(), model_file)
         print('Saved model to ' + model_file)
     print('Finished training.')
