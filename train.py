@@ -1,4 +1,5 @@
 import argparse
+import math
 import spacy
 import torch
 import torch.optim as optim
@@ -15,10 +16,27 @@ MAX_SEQ_LEN = 50
 MIN_WORD_FREQ = 2
 
 
+def cal_performance(out, labels, tgt_vocab):
+    loss = F.cross_entropy(out.view(-1, out.size(-1)), labels,
+                           ignore_index=tgt_vocab.stoi[CONSTANTS['pad']],
+                           reduction='sum')
+
+    pred = out.max(2)[1].view(-1)
+    labels = labels.contiguous().view(-1)
+    non_pad_mask = labels.ne(tgt_vocab.stoi[CONSTANTS['pad']])
+    n_correct = pred.eq(labels)
+    n_correct = n_correct.masked_select(non_pad_mask).sum().item()
+
+    return loss, n_correct
+
+
 def train(model, epoch, train_iterator, optimizer, src_vocab, tgt_vocab, args, writer):
     model.train()
 
-    losses = AverageMeter()
+    losses = 0
+    correct_words = 0
+    total_words = 0
+
     for batch_idx, batch in enumerate(train_iterator):
         device = args.device
         src = batch.src.transpose(0, 1).to(device)
@@ -30,23 +48,27 @@ def train(model, epoch, train_iterator, optimizer, src_vocab, tgt_vocab, args, w
         optimizer.zero_grad()
 
         labels = tgt[:, 1:].contiguous().view(-1)
-        loss = F.cross_entropy(out.view(-1, out.size(-1)), labels,
-                                ignore_index=tgt_vocab.stoi[CONSTANTS['pad']])
+        loss, n_correct = cal_performance(out, labels, tgt_vocab)
         loss.backward()
         optimizer.step()
 
-        losses.update(loss.item(), src.size(0))
+        losses += loss.item()
+        total_words += tgt[:, 1:].ne(tgt_vocab.stoi[CONSTANTS['pad']]).sum().item()
+        correct_words += n_correct
+
         if batch_idx % args.log_interval == 0:
-            print('Train Batch: [{0}/{1}]\t'
-                    'Loss {loss.val:.4f} ({loss.avg:.4f})'.format(
-                        batch_idx, len(train_iterator), loss=losses))
-    writer.add_scalar('train_loss', losses.avg, epoch)
+            print('  - (Training)   ppl: {ppl: 8.5f}, accuracy: {accu:3.3f} %'.format(
+                  ppl=math.exp(losses / total_words), accu=100 * correct_words / total_words))
+    writer.add_scalar('train_loss', losses / total_words, epoch)
 
 
 def validate(model, epoch, val_iterator, src_vocab, tgt_vocab, args, writer):
     model.eval()
 
-    losses = AverageMeter()
+    losses = 0
+    correct_words = 0
+    total_words = 0
+
     with torch.no_grad():
         for batch_idx, batch in enumerate(val_iterator):
             device = args.device
@@ -57,15 +79,15 @@ def validate(model, epoch, val_iterator, src_vocab, tgt_vocab, args, writer):
 
             out = model(src, tgt[:, :-1], src_mask, tgt_mask)
             labels = tgt[:, 1:].contiguous().view(-1)
-            loss = F.cross_entropy(out.view(-1, out.size(-1)), labels,
-                                   ignore_index=tgt_vocab.stoi[CONSTANTS['pad']])
+            loss, n_correct = cal_performance(out, labels, tgt_vocab)
 
-            losses.update(loss.item(), src.size(0))
-            if batch_idx % args.log_interval == 0:
-                print('Validation Batch: [{0}/{1}]\t'
-                      'Loss {loss.val:.4f} ({loss.avg:.4f})'.format(
-                          batch_idx, len(val_iterator), loss=losses))
-    writer.add_scalar('val_loss', losses.avg, epoch)
+            losses += loss.item()
+            total_words += tgt[:, 1:].ne(tgt_vocab.stoi[CONSTANTS['pad']]).sum().item()
+            correct_words += n_correct
+
+            print('  - (Validation) ppl: {ppl: 8.5f}, accuracy: {accu:3.3f} %'.format(
+                      ppl=math.exp(losses / total_words), accu=100 * correct_words / total_words))
+    writer.add_scalar('val_loss', losses / total_words, epoch)
 
 
 def run(args):
