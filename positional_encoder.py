@@ -5,11 +5,11 @@ from torch.autograd import Variable
 
 
 class PositionalEncoder(nn.Module):
-    def __init__(self, d_model=512, max_seq_len=50):
+    def __init__(self, device, d_model=512, max_seq_len=50):
         super(PositionalEncoder, self).__init__()
         self.dropout = nn.Dropout()
 
-        self.positional_encoder = torch.zeros(max_seq_len, d_model)
+        self.positional_encoder = torch.zeros(max_seq_len, d_model).to(device)
         for pos in range(max_seq_len):
             for i in range(0, d_model, 2):
                 self.positional_encoder[pos, i] = math.sin(self.frequencies(pos, i, d_model))
