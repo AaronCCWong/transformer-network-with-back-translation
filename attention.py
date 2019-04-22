@@ -16,9 +16,9 @@ class MultiHeadAttention(nn.Module):
     def forward(self, queries, keys, values, mask=None):
         batch_size = queries.size(0)
 
-        queries = self.q_linear(queries).view(batch_size, -1, 8, 64)
-        keys = self.k_linear(keys).view(batch_size, -1, 8, 64)
-        values = self.v_linear(values).view(batch_size, -1, 8, 64)
+        queries = self.q_linear(queries).view(batch_size, -1, 8, 64).transpose(1, 2)
+        keys = self.k_linear(keys).view(batch_size, -1, 8, 64).transpose(1, 2)
+        values = self.v_linear(values).view(batch_size, -1, 8, 64).transpose(1, 2)
 
         out = self.scaled_dot_product_att(queries, keys, values, mask)
         concat = out.transpose(1, 2).contiguous().view(batch_size, -1, 512)
@@ -32,12 +32,12 @@ class ScaledDotProductAttention(nn.Module):
 
     def forward(self, queries, keys, values, mask=None):
         d_k = queries.size(-1)
-        qk_t = torch.mm(queries, keys.transpose(-2, -1))
+        qk_t = torch.matmul(queries, keys.transpose(-2, -1))
         scaled_qk_t = qk_t / np.sqrt(d_k)
 
-        if mask:
+        if mask is not None:
             mask = mask.unsqueeze(1)
-            scaled_qk_t = scaled_qk_t.masked_fill(mask==0, -np.infty)
+            scaled_qk_t = scaled_qk_t.masked_fill(mask==0, -1e9)
 
         attention = self.softmax(scaled_qk_t)
-        return torch.mm(attention, values)
+        return torch.matmul(attention, values)
