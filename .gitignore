@@ -8,5 +8,3 @@ __pycache__
 .DS_Store
 
 .data
-data/cleaned
-data/raw

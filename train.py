@@ -1,3 +1,4 @@
+import argparse
 import spacy
 import torch
 import torch.optim as optim
@@ -12,12 +13,9 @@ from utils import AverageMeter, CONSTANTS, padding_mask, subsequent_mask, tokeni
 
 MAX_SEQ_LEN = 50
 MIN_WORD_FREQ = 2
-LR = 1e-4
-EPOCHS = 1
-LOG_INTERVAL = 100
 
 
-def train(model, epoch, train_iterator, optimizer, src_vocab, tgt_vocab, log_interval):
+def train(model, epoch, train_iterator, optimizer, src_vocab, tgt_vocab, log_interval, writer):
     model.train()
 
     losses = AverageMeter()
@@ -41,9 +39,10 @@ def train(model, epoch, train_iterator, optimizer, src_vocab, tgt_vocab, log_int
             print('Train Batch: [{0}/{1}]\t'
                     'Loss {loss.val:.4f} ({loss.avg:.4f})'.format(
                         batch_idx, len(train_iterator), loss=losses))
+    writer.add_scalar('train_loss', losses.avg, epoch)
 
 
-def validate(model, epoch, val_iterator, src_vocab, tgt_vocab, log_interval):
+def validate(model, epoch, val_iterator, src_vocab, tgt_vocab, log_interval, writer):
     model.eval()
 
     losses = AverageMeter()
@@ -64,9 +63,12 @@ def validate(model, epoch, val_iterator, src_vocab, tgt_vocab, log_interval):
                 print('Validation Batch: [{0}/{1}]\t'
                       'Loss {loss.val:.4f} ({loss.avg:.4f})'.format(
                           batch_idx, len(val_iterator), loss=losses))
+    writer.add_scalar('val_loss', losses.avg, epoch)
 
 
 def run(args):
+    writer = SummaryWriter()
+
     print('Loading spacy language models...')
     spacy_en = spacy.load('en_core_web_lg')
     spacy_de = spacy.load('de_core_news_sm')
@@ -101,15 +103,22 @@ def run(args):
     model = Transformer(src_vocab_size, tgt_vocab_size)
     print('Model instantiated!')
 
-    optimizer = optim.Adam(model.parameters(), lr=LR, betas=(0.9, 0.98), eps=1e-9)
+    optimizer = optim.Adam(model.parameters(), lr=args.lr, betas=(0.9, 0.98), eps=1e-9)
 
     print('Starting training...')
     for epoch in range(args.epochs):
-        train(model, epoch + 1, train_iterator, optimizer, src.vocab, tgt.vocab)
-        validate(model, epoch + 1, val_iterator, src.vocab, tgt.vocab)
-
+        train(model, epoch + 1, train_iterator, optimizer, src.vocab, tgt.vocab, args.log_interval, writer)
+        validate(model, epoch + 1, val_iterator, src.vocab, tgt.vocab, args.log_interval, writer)
     print('Finished training.')
 
 
 if __name__ == "__main__":
-    run()
+    parser = argparse.ArgumentParser(description='Transformer Network')
+    parser.add_argument('--epochs', type=int, default=10, metavar='E',
+                        help='number of epochs to train for (default: 10)')
+    parser.add_argument('--log-interval', type=int, default=100, metavar='L',
+                        help='number of batches to wait before logging training stats (default: 100)')
+    parser.add_argument('--lr', type=float, default=1e-4, metavar='LR',
+                        help='learning rate of the decoder (default: 1e-4)')
+
+    run(parser.parse_args())
