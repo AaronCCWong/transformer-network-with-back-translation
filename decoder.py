@@ -8,7 +8,7 @@ from utils import clone_layer
 class Decoder(nn.Module):
     def __init__(self, device, stack_size=6, d_model=512):
         super(Decoder, self).__init__()
-        self.layers = clone_layer(DecoderLayer(device, d_model), stack_size)
+        self.layers = clone_layer(DecoderLayer(d_model).to(device), stack_size)
 
     def forward(self, input, encoded_input, src_mask, tgt_mask):
         for layer in self.layers:
@@ -17,10 +17,10 @@ class Decoder(nn.Module):
 
 
 class DecoderLayer(nn.Module):
-    def __init__(self, device, d_model=512, p_dropout=0.1):
+    def __init__(self, d_model=512, p_dropout=0.1):
         super(DecoderLayer, self).__init__()
-        self.sub_layer1 = MultiHeadAttention(device)
-        self.sub_layer2 = MultiHeadAttention(device)
+        self.sub_layer1 = MultiHeadAttention()
+        self.sub_layer2 = MultiHeadAttention()
         self.sub_layer3 = FeedForwardLayer()
         self.layer_norm = nn.LayerNorm(d_model)
         self.dropout = nn.Dropout(p_dropout)

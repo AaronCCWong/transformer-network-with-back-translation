@@ -4,13 +4,11 @@ import torch.nn as nn
 
 
 class MultiHeadAttention(nn.Module):
-    def __init__(self, device):
+    def __init__(self):
         super(MultiHeadAttention, self).__init__()
-        self.device = device
-
-        self.v_linear = nn.Linear(512, 512).to(device)
-        self.k_linear = nn.Linear(512, 512).to(device)
-        self.q_linear = nn.Linear(512, 512).to(device)
+        self.v_linear = nn.Linear(512, 512)
+        self.k_linear = nn.Linear(512, 512)
+        self.q_linear = nn.Linear(512, 512)
 
         self.scaled_dot_product_att = ScaledDotProductAttention()
         self.linear = nn.Linear(512, 512)
