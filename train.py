@@ -2,8 +2,9 @@ import argparse
 import math
 import spacy
 import torch
-import torch.optim as optim
+import torch.nn as nn
 import torch.nn.functional as F
+import torch.optim as optim
 import torchtext
 from tensorboardX import SummaryWriter
 from torchtext import data, datasets
@@ -127,6 +128,11 @@ def run(args):
     device = args.device
     model = Transformer(src_vocab_size, tgt_vocab_size, device=device)
     model = model.to(device)
+
+    for p in model.parameters():
+        if p.dim() > 1:
+            nn.init.xavier_uniform_(p)
+
     print('Model instantiated!')
 
     optimizer = optim.Adam(model.parameters(), lr=args.lr, betas=(0.9, 0.98), eps=1e-9)
