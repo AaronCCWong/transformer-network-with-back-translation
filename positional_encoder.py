@@ -13,11 +13,11 @@ class PositionalEncoder(nn.Module):
         for pos in range(max_seq_len):
             for i in range(0, d_model, 2):
                 self.positional_encoder[pos, i] = math.sin(self.frequencies(pos, i, d_model))
-                self.positional_encoder[pos, i+1] = math.cos(self.frequencies(pos, i, d_model))
+                self.positional_encoder[pos, i+1] = math.cos(self.frequencies(pos, i+1, d_model))
 
     def forward(self, embedding_input):
         sequence_len = embedding_input.size(1)
-        positional_encoding = self.positional_encoder[:sequence_len, :]
+        positional_encoding = self.positional_encoder[:, :sequence_len]
         embedding_input = embedding_input + Variable(positional_encoding, requires_grad=False)
         return self.dropout(embedding_input)
 

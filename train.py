@@ -14,7 +14,7 @@ from utils import AverageMeter, CONSTANTS, padding_mask, subsequent_mask, tokeni
 
 
 MAX_SEQ_LEN = 50
-MIN_WORD_FREQ = 2
+MIN_WORD_FREQ = 5
 
 
 def cal_performance(out, labels, tgt_vocab):

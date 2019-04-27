@@ -18,8 +18,10 @@ class Transformer(nn.Module):
         self.encoder = Encoder(device, 6, d_model)
         self.decoder = Decoder(device, 6, d_model)
         self.linear = nn.Linear(d_model, tgt_vocab_size)
-        self.linear.weight = self.tgt_embedding.weight
         self.softmax = nn.LogSoftmax(dim=-1)
+
+        # Share weights
+        self.linear.weight = self.tgt_embedding.weight
 
     def forward(self, src, tgt, src_mask, tgt_mask):
         out = self.src_embedding(src) * math.sqrt(self.d_model)

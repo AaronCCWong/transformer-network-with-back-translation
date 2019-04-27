@@ -4,7 +4,7 @@ import torch.nn as nn
 
 
 class MultiHeadAttention(nn.Module):
-    def __init__(self):
+    def __init__(self, p_dropout=0.1):
         super(MultiHeadAttention, self).__init__()
         self.v_linear = nn.Linear(512, 512)
         self.k_linear = nn.Linear(512, 512)
@@ -12,8 +12,11 @@ class MultiHeadAttention(nn.Module):
 
         self.scaled_dot_product_att = ScaledDotProductAttention()
         self.linear = nn.Linear(512, 512)
+        self.dropout = nn.Dropout(p_dropout)
+        self.layer_norm = nn.LayerNorm(512)
 
     def forward(self, queries, keys, values, mask=None):
+        residual = queries
         batch_size = queries.size(0)
 
         queries = self.q_linear(queries).view(batch_size, -1, 8, 64).transpose(1, 2)
@@ -22,13 +25,15 @@ class MultiHeadAttention(nn.Module):
 
         out = self.scaled_dot_product_att(queries, keys, values, mask)
         concat = out.transpose(1, 2).contiguous().view(batch_size, -1, 512)
-        return self.linear(concat)
+        out = self.linear(concat)
+        out = self.dropout(out)
+        return self.layer_norm(out + residual)
 
 
 class ScaledDotProductAttention(nn.Module):
     def __init__(self):
         super(ScaledDotProductAttention, self).__init__()
-        self.softmax = nn.Softmax()
+        self.softmax = nn.Softmax(dim=-1)
 
     def forward(self, queries, keys, values, mask=None):
         d_k = queries.size(-1)
