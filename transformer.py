@@ -12,19 +12,21 @@ class Transformer(nn.Module):
         self.d_model = d_model
 
         self.src_embedding = nn.Embedding(src_vocab_size, d_model)
+        self.positional_encoder1 = PositionalEncoder(device, d_model)
         self.tgt_embedding = nn.Embedding(tgt_vocab_size, d_model)
-        self.positional_encoder = PositionalEncoder(device, d_model)
+        self.positional_encoder2 = PositionalEncoder(device, d_model)
         self.encoder = Encoder(device, 6, d_model)
         self.decoder = Decoder(device, 6, d_model)
         self.linear = nn.Linear(d_model, tgt_vocab_size)
-        self.softmax = nn.Softmax()
+        self.linear.weight = self.tgt_embedding.weight
+        self.softmax = nn.LogSoftmax(dim=-1)
 
     def forward(self, src, tgt, src_mask, tgt_mask):
         out = self.src_embedding(src) * math.sqrt(self.d_model)
-        out = self.positional_encoder(out)
+        out = self.positional_encoder1(out)
         encoded_input = self.encoder(out, src_mask)
         out = self.tgt_embedding(tgt) * math.sqrt(self.d_model)
-        out = self.positional_encoder(out)
+        out = self.positional_encoder2(out)
         out = self.decoder(out, encoded_input, src_mask, tgt_mask)
         out = self.linear(out)
         return self.softmax(out)

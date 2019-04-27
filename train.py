@@ -43,7 +43,7 @@ def train(model, epoch, train_iterator, optimizer, src_vocab, tgt_vocab, args, w
         src = batch.src.transpose(0, 1).to(device)
         tgt = batch.tgt.transpose(0, 1).to(device)
         src_mask = padding_mask(src, src_vocab)
-        tgt_mask = padding_mask(tgt[:, :-1], src_vocab) & subsequent_mask(tgt[:, :-1]).to(device)
+        tgt_mask = padding_mask(tgt[:, :-1], tgt_vocab) & subsequent_mask(tgt[:, :-1]).to(device)
 
         out = model(src, tgt[:, :-1], src_mask, tgt_mask)
         optimizer.zero_grad()
@@ -57,9 +57,8 @@ def train(model, epoch, train_iterator, optimizer, src_vocab, tgt_vocab, args, w
         total_words += tgt[:, 1:].ne(tgt_vocab.stoi[CONSTANTS['pad']]).sum().item()
         correct_words += n_correct
 
-        if batch_idx % args.log_interval == 0:
-            print('  - (Training)   ppl: {ppl: 8.5f}, accuracy: {accu:3.3f} %'.format(
-                  ppl=math.exp(losses / total_words), accu=100 * correct_words / total_words))
+    print('  - (Training)   ppl: {ppl: 8.5f}, accuracy: {accu:3.3f} %'.format(
+          ppl=math.exp(losses / total_words), accu=100 * correct_words / total_words))
     writer.add_scalar('train_loss', losses / total_words, epoch)
 
 
@@ -86,8 +85,8 @@ def validate(model, epoch, val_iterator, src_vocab, tgt_vocab, args, writer):
             total_words += tgt[:, 1:].ne(tgt_vocab.stoi[CONSTANTS['pad']]).sum().item()
             correct_words += n_correct
 
-            print('  - (Validation) ppl: {ppl: 8.5f}, accuracy: {accu:3.3f} %'.format(
-                      ppl=math.exp(losses / total_words), accu=100 * correct_words / total_words))
+    print('  - (Validation) ppl: {ppl: 8.5f}, accuracy: {accu:3.3f} %'.format(
+          ppl=math.exp(losses / total_words), accu=100 * correct_words / total_words))
     writer.add_scalar('val_loss', losses / total_words, epoch)
 
 
