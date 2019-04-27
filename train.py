@@ -156,9 +156,11 @@ if __name__ == "__main__":
                         help='maximum length of sentence to use (default: 50)')
     parser.add_argument('--min-word-freq', type=int, default=5,
                         help='minimum word frequency to be added to dictionary (default: 5)')
+    parser.add_argument('--no-cuda', action="store_true",
+                        help='run on cpu (default: 5)')
 
     args = parser.parse_args()
-    args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    args.device = torch.device('cuda' if torch.cuda.is_available() and not args.no_cuda else 'cpu')
 
     print('Running with these options:', args)
     run(args)
