@@ -7,7 +7,7 @@ from positional_encoder import PositionalEncoder
 
 
 class Transformer(nn.Module):
-    def __init__(self, src_vocab_size, tgt_vocab_size, d_model=512, p_dropout=0.1, device='cpu'):
+    def __init__(self, src_vocab_size, tgt_vocab_size, device, d_model=512, p_dropout=0.1):
         super(Transformer, self).__init__()
         self.d_model = d_model
 

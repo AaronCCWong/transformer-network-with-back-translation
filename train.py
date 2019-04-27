@@ -121,7 +121,7 @@ def run(args):
 
     print('Intstantiating model...')
     device = args.device
-    model = Transformer(src_vocab_size, tgt_vocab_size, device=device, p_dropout=args.dropout)
+    model = Transformer(src_vocab_size, tgt_vocab_size, device, p_dropout=args.dropout)
     model = model.to(device)
 
     for p in model.parameters():
