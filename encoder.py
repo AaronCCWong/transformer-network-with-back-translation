@@ -20,16 +20,9 @@ class Encoder(nn.Module):
 class EncoderLayer(nn.Module):
     def __init__(self, d_model=512, p_dropout=0.1):
         super(EncoderLayer, self).__init__()
-        self.sub_layer1 = MultiHeadAttention()
-        self.sub_layer2 = FeedForwardLayer()
-        self.layer_norm = nn.LayerNorm(d_model)
-        self.dropout = nn.Dropout(p_dropout)
+        self.sub_layer1 = MultiHeadAttention(p_dropout)
+        self.sub_layer2 = FeedForwardLayer(p_dropout)
 
     def forward(self, input, mask=None):
-        residual = input
-        out = self.dropout(self.sub_layer1(input, input, input, mask))
-        out = self.layer_norm(residual + out)
-
-        residual = out
-        output = self.dropout(self.sub_layer2(out))
-        return self.layer_norm(residual + output)
+        out = self.sub_layer1(input, input, input, mask)
+        return self.sub_layer2(out)
