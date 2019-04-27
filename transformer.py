@@ -7,14 +7,14 @@ from positional_encoder import PositionalEncoder
 
 
 class Transformer(nn.Module):
-    def __init__(self, src_vocab_size, tgt_vocab_size, d_model=512, device='cpu'):
+    def __init__(self, src_vocab_size, tgt_vocab_size, d_model=512, p_dropout=0.1, device='cpu'):
         super(Transformer, self).__init__()
         self.d_model = d_model
 
         self.src_embedding = nn.Embedding(src_vocab_size, d_model)
-        self.positional_encoder1 = PositionalEncoder(device, d_model)
+        self.positional_encoder1 = PositionalEncoder(device, d_model=d_model, p_dropout=p_dropout)
         self.tgt_embedding = nn.Embedding(tgt_vocab_size, d_model)
-        self.positional_encoder2 = PositionalEncoder(device, d_model)
+        self.positional_encoder2 = PositionalEncoder(device, d_model=d_model, p_dropout=p_dropout)
         self.encoder = Encoder(device, 6, d_model)
         self.decoder = Decoder(device, 6, d_model)
         self.linear = nn.Linear(d_model, tgt_vocab_size)

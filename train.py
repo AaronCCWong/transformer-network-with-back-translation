@@ -13,10 +13,6 @@ from transformer import Transformer
 from utils import AverageMeter, CONSTANTS, padding_mask, subsequent_mask, tokenize
 
 
-MAX_SEQ_LEN = 50
-MIN_WORD_FREQ = 5
-
-
 def cal_performance(out, labels, tgt_vocab):
     loss = F.cross_entropy(out.view(-1, out.size(-1)), labels,
                            ignore_index=tgt_vocab.stoi[CONSTANTS['pad']],
@@ -108,12 +104,12 @@ def run(args):
     print('Loading data splits...')
     train_gen, val_gen, test_gen = datasets.Multi30k.splits(exts=('.en', '.de'),
                                                 fields=(('src', src), ('tgt', tgt)),
-                                                filter_pred=lambda x: len(vars(x)['src']) <= MAX_SEQ_LEN and len(vars(x)['tgt']) <= MAX_SEQ_LEN)
+                                                filter_pred=lambda x: len(vars(x)['src']) <= args.max_seq_length and len(vars(x)['tgt']) <= args.max_seq_length)
     print('Finished loading data splits.')
 
     print('Building vocabulary...')
-    src.build_vocab(train_gen.src, min_freq=MIN_WORD_FREQ)
-    tgt.build_vocab(train_gen.tgt, min_freq=MIN_WORD_FREQ)
+    src.build_vocab(train_gen.src, min_freq=args.min_word_freq)
+    tgt.build_vocab(train_gen.tgt, min_freq=args.min_word_freq)
     print('Finished building vocabulary.')
 
     src_vocab_size = len(src.vocab.itos)
@@ -125,7 +121,7 @@ def run(args):
 
     print('Intstantiating model...')
     device = args.device
-    model = Transformer(src_vocab_size, tgt_vocab_size, device=device)
+    model = Transformer(src_vocab_size, tgt_vocab_size, device=device, p_dropout=args.dropout)
     model = model.to(device)
 
     for p in model.parameters():
@@ -148,14 +144,21 @@ def run(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Transformer Network')
-    parser.add_argument('--epochs', type=int, default=10, metavar='E',
+    parser.add_argument('--epochs', type=int, default=10,
                         help='number of epochs to train for (default: 10)')
-    parser.add_argument('--log-interval', type=int, default=100, metavar='L',
+    parser.add_argument('--log-interval', type=int, default=100,
                         help='number of batches to wait before logging training stats (default: 100)')
-    parser.add_argument('--lr', type=float, default=1e-4, metavar='LR',
+    parser.add_argument('--lr', type=float, default=1e-4,
                         help='learning rate of the decoder (default: 1e-4)')
+    parser.add_argument('--dropout', type=float, default=0.1,
+                        help='probability of dropout (default: 0.1)')
+    parser.add_argument('--max-seq-length', type=int, default=50,
+                        help='maximum length of sentence to use (default: 50)')
+    parser.add_argument('--min-word-freq', type=int, default=5,
+                        help='minimum word frequency to be added to dictionary (default: 5)')
 
     args = parser.parse_args()
-    args.device = torch.device("cuda:0" if torch.cuda.is_available() else 'cpu')
+    args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+    print('Running with these options:', args)
     run(args)
