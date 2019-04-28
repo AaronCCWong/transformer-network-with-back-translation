@@ -9,7 +9,7 @@ import torchtext
 from tensorboardX import SummaryWriter
 from torchtext import data, datasets
 
-from transformer import Transformer
+from transformer.transformer import Transformer
 from utils import CONSTANTS, padding_mask, subsequent_mask, tokenize
 
 

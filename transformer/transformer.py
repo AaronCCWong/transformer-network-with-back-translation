@@ -1,9 +1,9 @@
 import math
 import torch.nn as nn
 
-from decoder import Decoder
-from encoder import Encoder
-from positional_encoder import PositionalEncoder
+from .decoder import Decoder
+from .encoder import Encoder
+from .positional_encoder import PositionalEncoder
 
 
 class Transformer(nn.Module):

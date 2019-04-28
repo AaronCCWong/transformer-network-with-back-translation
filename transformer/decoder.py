@@ -1,7 +1,7 @@
 import torch.nn as nn
 
-from attention import MultiHeadAttention
-from feed_forward import FeedForwardLayer
+from .attention import MultiHeadAttention
+from .feed_forward import FeedForwardLayer
 from utils import clone_layer
 
 
