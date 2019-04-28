@@ -115,7 +115,7 @@ def run(args):
     src_vocab_size = len(src.vocab.itos)
     tgt_vocab_size = len(tgt.vocab.itos)
 
-    train_iterator, val_iterator, test_iterator = data.Iterator.splits((train_gen, val_gen, test_gen),
+    train_iterator, val_iterator, _ = data.Iterator.splits((train_gen, val_gen, test_gen),
                                                                         sort_key=lambda x: len(x.src),
                                                                         batch_sizes=(32, 256, 256))
 
