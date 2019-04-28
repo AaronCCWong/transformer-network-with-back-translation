@@ -10,7 +10,7 @@ from tensorboardX import SummaryWriter
 from torchtext import data, datasets
 
 from transformer import Transformer
-from utils import AverageMeter, CONSTANTS, padding_mask, subsequent_mask, tokenize
+from utils import CONSTANTS, padding_mask, subsequent_mask, tokenize
 
 
 def cal_performance(out, labels, tgt_vocab):
