@@ -2,28 +2,13 @@ import argparse
 import math
 import spacy
 import torch
-import torch.nn.functional as F
 import torchtext
 from nltk.translate.bleu_score import corpus_bleu
 from tensorboardX import SummaryWriter
 from torchtext import data, datasets
 
 from transformer.transformer import Transformer
-from transformer.utils import CONSTANTS, padding_mask, subsequent_mask, tokenize
-
-
-def cal_performance(out, labels, tgt_vocab):
-    loss = F.cross_entropy(out.view(-1, out.size(-1)), labels,
-                           ignore_index=tgt_vocab.stoi[CONSTANTS['pad']],
-                           reduction='sum')
-
-    pred = out.max(2)[1].view(-1)
-    labels = labels.contiguous().view(-1)
-    non_pad_mask = labels.ne(tgt_vocab.stoi[CONSTANTS['pad']])
-    n_correct = pred.eq(labels)
-    n_correct = n_correct.masked_select(non_pad_mask).sum().item()
-
-    return loss, n_correct
+from transformer.utils import CONSTANTS, cal_performance, padding_mask, subsequent_mask, tokenize
 
 
 def test(model, test_iterator, src_vocab, tgt_vocab, args, writer):
