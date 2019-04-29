@@ -107,7 +107,7 @@ if __name__ == "__main__":
                         help='minimum word frequency to be added to dictionary (default: 5)')
     parser.add_argument('--no-cuda', action="store_true",
                         help='run on cpu')
-    parser.add_argument('--model', type=str, default='models/model_99.pth',
+    parser.add_argument('--model', type=str, default='models/model.pth',
                         help='path to model parameters')
 
     args = parser.parse_args()
