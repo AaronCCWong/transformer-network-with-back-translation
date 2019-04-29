@@ -103,7 +103,7 @@ def run(args):
 
     train_iterator, val_iterator, _ = data.Iterator.splits((train_gen, val_gen, test_gen),
                                                                         sort_key=lambda x: len(x.src),
-                                                                        batch_sizes=(32, 256, 256))
+                                                                        batch_sizes=(64, 256, 256))
 
     print('Intstantiating model...')
     device = args.device
