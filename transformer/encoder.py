@@ -6,10 +6,9 @@ from .utils import clone_layer
 
 
 class Encoder(nn.Module):
-    def __init__(self, device, stack_size=6, d_model=512):
+    def __init__(self, stack_size=6, d_model=512):
         super(Encoder, self).__init__()
-        self.device = device
-        self.layers = clone_layer(EncoderLayer(d_model).to(device), stack_size)
+        self.layers = nn.ModuleList(clone_layer(EncoderLayer(d_model), stack_size))
 
     def forward(self, input, mask=None):
         for layer in self.layers:

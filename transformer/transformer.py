@@ -1,9 +1,9 @@
 import math
 import torch.nn as nn
 
-from .decoder import Decoder
-from .encoder import Encoder
-from .positional_encoder import PositionalEncoder
+from transformer.decoder import Decoder
+from transformer.encoder import Encoder
+from transformer.positional_encoder import PositionalEncoder
 
 
 class Transformer(nn.Module):
@@ -15,8 +15,8 @@ class Transformer(nn.Module):
         self.positional_encoder1 = PositionalEncoder(device, d_model=d_model, p_dropout=p_dropout)
         self.tgt_embedding = nn.Embedding(tgt_vocab_size, d_model)
         self.positional_encoder2 = PositionalEncoder(device, d_model=d_model, p_dropout=p_dropout)
-        self.encoder = Encoder(device, 6, d_model)
-        self.decoder = Decoder(device, 6, d_model)
+        self.encoder = Encoder(6, d_model)
+        self.decoder = Decoder(6, d_model)
         self.linear = nn.Linear(d_model, tgt_vocab_size)
         self.softmax = nn.LogSoftmax(dim=-1)
 

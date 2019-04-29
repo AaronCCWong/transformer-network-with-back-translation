@@ -6,9 +6,9 @@ from .utils import clone_layer
 
 
 class Decoder(nn.Module):
-    def __init__(self, device, stack_size=6, d_model=512):
+    def __init__(self, stack_size=6, d_model=512):
         super(Decoder, self).__init__()
-        self.layers = clone_layer(DecoderLayer(d_model).to(device), stack_size)
+        self.layers = nn.ModuleList(clone_layer(DecoderLayer(d_model), stack_size))
 
     def forward(self, input, encoded_input, src_mask, tgt_mask):
         for layer in self.layers:
