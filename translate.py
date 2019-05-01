@@ -8,20 +8,36 @@ from transformer.utils import (CONSTANTS, get_tokenizer, build_file_extension, b
 
 def run(args):
     with torch.no_grad():
-        src, tgt, train_iterator, _ = build_dataset(args)
+        src, tgt, _, _ = build_dataset(args)
+
+        train_gen, _, _ = datasets.WMT14.splits(exts=(build_file_extension(args.src_language), build_file_extension(args.tgt_language)),
+                                                fields=(('src', src), ('tgt', tgt)),
+                                                filter_pred=lambda x: len(vars(x)['src']) <= args.max_seq_length and len(vars(x)['tgt']) <= args.max_seq_length)
+
+        data_iterator, _, _ = data.Iterator.splits((train_gen, _, _),
+                                                    sort_key=lambda x: len(x.src),
+                                                    batch_sizes=(64, 256, 256))
 
         src_vocab_size = len(src.vocab.itos)
         tgt_vocab_size = len(tgt.vocab.itos)
 
         translator = Translator(src.vocab, tgt.vocab, src_vocab_size, tgt_vocab_size, args)
 
-        with open('output.txt', 'w') as f:
-            for batch_idx, batch in enumerate(train_iterator):
-                all_hyp, all_scores = translator.translate_batch(batch.src.transpose(0, 1))
-                for idx_seqs in all_hyp:
+        with open('tgt.txt', 'w') as tgt_f:
+            with open('src.txt', 'w') as src_f:
+                for batch_idx, batch in enumerate(data_iterator):
+                    tgt_seqs = batch.src.transpose(0, 1)
+                    for idx_seqs in tgt_seqs:
+                        sentence_idxs = [idx for idx in idx_seqs if idx not in (
+                            src.vocab.stoi[CONSTANTS['pad']], src.vocab.stoi[CONSTANTS['start']], src.vocab.stoi[CONSTANTS['end']])]
+                        line = ' '.join([src.vocab.itos[idx] for idx in sentence_idxs])
+                        tgt_f.write(line + '\n')
+
+                    all_hyp, all_scores = translator.translate_batch(batch.src.transpose(0, 1))
+                    for idx_seqs in all_hyp:
                         for idx_seq in idx_seqs:
                             pred_line = ' '.join([tgt.vocab.itos[idx] for idx in idx_seq[:-1]])
-                            f.write(pred_line + '\n')
+                            src_f.write(pred_line + '\n')
 
 
 if __name__ == "__main__":
@@ -34,11 +50,11 @@ if __name__ == "__main__":
                         help='minimum word frequency to be added to dictionary (default: 5)')
     parser.add_argument('--beam-size', type=int, default=5,
                         help='beam size to use in translation (default: 5)')
-    parser.add_argument('--src-language', type=str, default='en',
+    parser.add_argument('--src-language', type=str, default='de',
                         help='the source language to translate from (default: en)')
-    parser.add_argument('--tgt-language', type=str, default='de',
+    parser.add_argument('--tgt-language', type=str, default='en',
                         help='the source language to translate from (default: de)')
-    parser.add_argument('--model', type=str, required=True,
+    parser.add_argument('--model', type=str, default='models/model_9.pth',
                         help='path to model parameters')
 
     args = parser.parse_args()
