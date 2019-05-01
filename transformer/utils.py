@@ -1,3 +1,4 @@
+import spacy
 import torch
 import torch.nn.functional as F
 from copy import deepcopy
@@ -8,6 +9,16 @@ CONSTANTS = {
     'start': '<s>',
     'end': '</s>'
 }
+
+
+LANGUAGES = {
+    'ENGLISH': 'en',
+    'GERMAN': 'de'
+}
+
+
+def build_file_extension(language):
+    return '.' + language
 
 
 def cal_performance(out, labels, tgt_vocab):
@@ -28,13 +39,13 @@ def clone_layer(layer, num_clones):
     return [deepcopy(layer) for i in range(num_clones)]
 
 
-def generate_word_dict(pathToEnglishData, pathToFrenchData):
-    word_dict = {}
-    with open('data/train/giga-fren.release2.fixed.en', 'r') as file:
-        line = file.readline()
-        while line:
-            # Process data
-            break
+def get_tokenizer(language):
+    if language == LANGUAGES['ENGLISH']:
+        return tokenize(spacy.load('en_core_web_lg'))
+    elif language == LANGUAGES['GERMAN']:
+        return tokenize(spacy.load('de_core_news_sm'))
+    else:
+            raise Exception('Language provided is not supported')
 
 
 def padding_mask(seq, src_vocab):
