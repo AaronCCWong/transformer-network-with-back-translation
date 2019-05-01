@@ -11,7 +11,8 @@ from torchtext import data, datasets
 
 from transformer.transformer import Transformer
 from transformer.utils import (CONSTANTS, cal_performance, padding_mask,
-                               subsequent_mask, get_tokenizer, build_file_extension)
+                               subsequent_mask, get_tokenizer, build_file_extension,
+                               build_dataset)
 
 
 def train(model, epoch, train_iterator, optimizer, src_vocab, tgt_vocab, args, writer):
@@ -71,33 +72,6 @@ def validate(model, epoch, val_iterator, src_vocab, tgt_vocab, args, writer):
     print('  - (Validation) ppl: {ppl: 8.5f}, accuracy: {accu:3.3f} %'.format(
           ppl=math.exp(losses / total_words), accu=100 * correct_words / total_words))
     writer.add_scalar('val_loss', losses / total_words, epoch)
-
-
-def build_dataset(args):
-    print('Loading spacy language models...')
-    src = data.Field(tokenize=get_tokenizer(args.src_language), lower=True, pad_token=CONSTANTS['pad'])
-    tgt = data.Field(tokenize=get_tokenizer(args.tgt_language),
-                     lower=True,
-                     init_token=CONSTANTS['start'],
-                     pad_token=CONSTANTS['pad'],
-                     eos_token=CONSTANTS['end'])
-    print('Finished loading spacy language models.')
-
-    print('Loading data splits...')
-    train_gen, val_gen, test_gen = datasets.Multi30k.splits(exts=(build_file_extension(args.src_language), build_file_extension(args.tgt_language)),
-                                                            fields=(('src', src), ('tgt', tgt)),
-                                                            filter_pred=lambda x: len(vars(x)['src']) <= args.max_seq_length and len(vars(x)['tgt']) <= args.max_seq_length)
-    print('Finished loading data splits.')
-
-    print('Building vocabulary...')
-    src.build_vocab(train_gen.src, min_freq=args.min_word_freq)
-    tgt.build_vocab(train_gen.tgt, min_freq=args.min_word_freq)
-    print('Finished building vocabulary.')
-
-    train_iterator, val_iterator, _ = data.Iterator.splits((train_gen, val_gen, test_gen),
-                                                            sort_key=lambda x: len(x.src),
-                                                            batch_sizes=(64, 256, 256))
-    return src, tgt, train_iterator, val_iterator
 
 
 def run(args):

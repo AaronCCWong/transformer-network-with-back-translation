@@ -2,6 +2,7 @@ import spacy
 import torch
 import torch.nn.functional as F
 from copy import deepcopy
+from torchtext import data, datasets
 
 
 CONSTANTS = {
@@ -19,6 +20,33 @@ LANGUAGES = {
 
 def build_file_extension(language):
     return '.' + language
+
+
+def build_dataset(args):
+    print('Loading spacy language models...')
+    src = data.Field(tokenize=get_tokenizer(args.src_language), lower=True, pad_token=CONSTANTS['pad'])
+    tgt = data.Field(tokenize=get_tokenizer(args.tgt_language),
+                     lower=True,
+                     init_token=CONSTANTS['start'],
+                     pad_token=CONSTANTS['pad'],
+                     eos_token=CONSTANTS['end'])
+    print('Finished loading spacy language models.')
+
+    print('Loading data splits...')
+    train_gen, val_gen, test_gen = datasets.Multi30k.splits(exts=(build_file_extension(args.src_language), build_file_extension(args.tgt_language)),
+                                                            fields=(('src', src), ('tgt', tgt)),
+                                                            filter_pred=lambda x: len(vars(x)['src']) <= args.max_seq_length and len(vars(x)['tgt']) <= args.max_seq_length)
+    print('Finished loading data splits.')
+
+    print('Building vocabulary...')
+    src.build_vocab(train_gen.src, min_freq=args.min_word_freq)
+    tgt.build_vocab(train_gen.tgt, min_freq=args.min_word_freq)
+    print('Finished building vocabulary.')
+
+    train_iterator, val_iterator, _ = data.Iterator.splits((train_gen, val_gen, test_gen),
+                                                            sort_key=lambda x: len(x.src),
+                                                            batch_sizes=(64, 256, 256))
+    return src, tgt, train_iterator, val_iterator
 
 
 def cal_performance(out, labels, tgt_vocab):
@@ -45,7 +73,7 @@ def get_tokenizer(language):
     elif language == LANGUAGES['GERMAN']:
         return tokenize(spacy.load('de_core_news_sm'))
     else:
-            raise Exception('Language provided is not supported')
+        raise Exception('Language provided is not supported')
 
 
 def padding_mask(seq, src_vocab):
