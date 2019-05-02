@@ -33,7 +33,7 @@ def build_dataset(args):
     print('Finished loading spacy language models.')
 
     print('Loading data splits...')
-    train_gen, val_gen, test_gen = datasets.Multi30k.splits(exts=(build_file_extension(args.src_language), build_file_extension(args.tgt_language)),
+    train_gen, val_gen, _ = datasets.WMT14.splits(exts=(build_file_extension(args.src_language), build_file_extension(args.tgt_language)),
                                                             fields=(('src', src), ('tgt', tgt)),
                                                             filter_pred=lambda x: len(vars(x)['src']) <= args.max_seq_length and len(vars(x)['tgt']) <= args.max_seq_length)
     print('Finished loading data splits.')
@@ -43,9 +43,9 @@ def build_dataset(args):
     tgt.build_vocab(train_gen.tgt, min_freq=args.min_word_freq)
     print('Finished building vocabulary.')
 
-    train_iterator, val_iterator, _ = data.Iterator.splits((train_gen, val_gen, test_gen),
+    train_iterator, val_iterator, _ = data.Iterator.splits((train_gen, val_gen, _),
                                                             sort_key=lambda x: len(x.src),
-                                                            batch_sizes=(64, 256, 256))
+                                                            batch_sizes=(128, 256, 256))
     return src, tgt, train_iterator, val_iterator
 
 
