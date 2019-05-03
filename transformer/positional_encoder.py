@@ -5,7 +5,7 @@ from torch.autograd import Variable
 
 
 class PositionalEncoder(nn.Module):
-    def __init__(self, device, d_model=512, max_seq_len=50, p_dropout=0.1):
+    def __init__(self, device, d_model=512, max_seq_len=52, p_dropout=0.1):
         super(PositionalEncoder, self).__init__()
         self.d_model = d_model
         self.dropout = nn.Dropout(p_dropout)
