@@ -45,7 +45,7 @@ def build_dataset(args):
 
     train_iterator, val_iterator, _ = data.Iterator.splits((train_gen, val_gen, _),
                                                             sort_key=lambda x: len(x.src),
-                                                            batch_sizes=(128, 256, 256))
+                                                            batch_sizes=(32, 256, 256))
     return src, tgt, train_iterator, val_iterator
 
 
