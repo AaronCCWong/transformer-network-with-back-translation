@@ -8,7 +8,7 @@ from tensorboardX import SummaryWriter
 from torchtext import data, datasets
 
 from transformer.transformer import Transformer
-from transformer.utils import CONSTANTS, cal_performance, padding_mask, subsequent_mask, tokenize
+from transformer.utils import CONSTANTS, cal_performance, padding_mask, subsequent_mask, get_tokenizer, build_file_extension
 
 
 def test(model, test_iterator, src_vocab, tgt_vocab, args, writer):
@@ -60,17 +60,21 @@ def run(args):
     spacy_de = spacy.load('de_core_news_sm')
     print('Finished loading spacy language models.')
 
-    src = data.Field(tokenize=tokenize(spacy_en), lower=True, pad_token=CONSTANTS['pad'])
-    tgt = data.Field(tokenize=tokenize(spacy_de),
+    src = data.Field(tokenize=get_tokenizer(args.src_language), lower=True, pad_token=CONSTANTS['pad'])
+    tgt = data.Field(tokenize=get_tokenizer(args.tgt_language),
                      lower=True,
                      init_token=CONSTANTS['start'],
                      pad_token=CONSTANTS['pad'],
                      eos_token=CONSTANTS['end'])
 
     print('Loading data splits...')
-    train_gen, val_gen, test_gen = datasets.Multi30k.splits(exts=('.en', '.de'),
-                                                fields=(('src', src), ('tgt', tgt)),
-                                                filter_pred=lambda x: len(vars(x)['src']) <= args.max_seq_length and len(vars(x)['tgt']) <= args.max_seq_length)
+    train_gen, _, _ = datasets.WMT14.splits(exts=(build_file_extension(args.src_language), build_file_extension(args.tgt_language)),
+                                            fields=(('src', src), ('tgt', tgt)),
+                                            filter_pred=lambda x: len(vars(x)['src']) <= args.max_seq_length and len(vars(x)['tgt']) <= args.max_seq_length)
+
+    _, _, test_gen = datasets.Multi30k.splits(exts=(build_file_extension(args.src_language), build_file_extension(args.tgt_language)),
+                                              fields=(('src', src), ('tgt', tgt)),
+                                              filter_pred=lambda x: len(vars(x)['src']) <= args.max_seq_length and len(vars(x)['tgt']) <= args.max_seq_length)
     print('Finished loading data splits.')
 
     print('Building vocabulary...')
@@ -81,9 +85,9 @@ def run(args):
     src_vocab_size = len(src.vocab.itos)
     tgt_vocab_size = len(tgt.vocab.itos)
 
-    _, _, test_iterator = data.Iterator.splits((train_gen, val_gen, test_gen),
-                                                                        sort_key=lambda x: len(x.src),
-                                                                        batch_sizes=(32, 256, 256))
+    _, _, test_iterator = data.Iterator.splits((train_gen, _, test_gen),
+                                                sort_key=lambda x: len(x.src),
+                                                batch_sizes=(32, 256, 256))
 
     print('Intstantiating model...')
     device = args.device
@@ -107,6 +111,10 @@ if __name__ == "__main__":
                         help='minimum word frequency to be added to dictionary (default: 5)')
     parser.add_argument('--no-cuda', action="store_true",
                         help='run on cpu')
+    parser.add_argument('--src-language', type=str, default='en',
+                        help='the source language to translate from (default: en)')
+    parser.add_argument('--tgt-language', type=str, default='de',
+                        help='the source language to translate from (default: de)')
     parser.add_argument('--model', type=str, default='models/model_9.pth',
                         help='path to model parameters')
 
