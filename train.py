@@ -8,6 +8,7 @@ import torch.optim as optim
 import torchtext
 from tensorboardX import SummaryWriter
 from torchtext import data, datasets
+from tqdm import tqdm
 
 from transformer.transformer import Transformer
 from transformer.utils import (CONSTANTS, cal_performance, padding_mask,
@@ -22,7 +23,7 @@ def train(model, epoch, train_iterator, optimizer, src_vocab, tgt_vocab, args, w
     correct_words = 0
     total_words = 0
 
-    for batch_idx, batch in enumerate(train_iterator):
+    for batch_idx, batch in tqdm(enumerate(train_iterator), total=len(train_iterator)):
         device = args.device
         src = batch.src.transpose(0, 1).to(device)
         tgt = batch.tgt.transpose(0, 1).to(device)
@@ -54,7 +55,7 @@ def validate(model, epoch, val_iterator, src_vocab, tgt_vocab, args, writer):
     total_words = 0
 
     with torch.no_grad():
-        for batch_idx, batch in enumerate(val_iterator):
+        for batch_idx, batch in tqdm(enumerate(val_iterator), total=len(val_iterator)):
             device = args.device
             src = batch.src.transpose(0, 1).to(device)
             tgt = batch.tgt.transpose(0, 1).to(device)
