@@ -2,6 +2,7 @@ import spacy
 import torch
 import torch.nn.functional as F
 from copy import deepcopy
+from itertools import chain
 from torchtext import data, datasets
 
 
@@ -33,19 +34,33 @@ def build_dataset(args):
     print('Finished loading spacy language models.')
 
     print('Loading data splits...')
-    train_gen, val_gen, _ = datasets.WMT14.splits(exts=(build_file_extension(args.src_language), build_file_extension(args.tgt_language)),
-                                                            fields=(('src', src), ('tgt', tgt)),
-                                                            filter_pred=lambda x: len(vars(x)['src']) <= args.max_seq_length and len(vars(x)['tgt']) <= args.max_seq_length)
+    multi30k_train_gen, multi30k_val_gen, _ = datasets.Multi30k.splits(exts=(build_file_extension(args.src_language), build_file_extension(args.tgt_language)),
+                                                         fields=(('src', src), ('tgt', tgt)),
+                                                         filter_pred=lambda x: len(vars(x)['src']) <= args.max_seq_length and len(vars(x)['tgt']) <= args.max_seq_length)
+
+    iwslt_train_gen, iwslt_val_gen, _ = datasets.IWSLT.splits(exts=(build_file_extension(args.src_language), build_file_extension(args.tgt_language)),
+                                                              fields=(('src', src), ('tgt', tgt)),
+                                                              filter_pred=lambda x: len(vars(x)['src']) <= args.max_seq_length and len(vars(x)['tgt']) <= args.max_seq_length)
+
+    training_examples = multi30k_train_gen.examples + iwslt_train_gen.examples
+    validation_examples = multi30k_val_gen.examples + iwslt_val_gen.examples
+
+    training_data = data.Dataset(training_examples, multi30k_train_gen.fields)
+    validation_data = data.Dataset(validation_examples, multi30k_train_gen.fields)
     print('Finished loading data splits.')
 
     print('Building vocabulary...')
-    src.build_vocab(train_gen.src, min_freq=args.min_word_freq)
-    tgt.build_vocab(train_gen.tgt, min_freq=args.min_word_freq)
+    train_gen_src = chain(multi30k_train_gen.src, iwslt_train_gen.src)
+    train_gen_tgt = chain(multi30k_train_gen.tgt, iwslt_train_gen.tgt)
+
+    src.build_vocab(train_gen_src, min_freq=args.min_word_freq)
+    tgt.build_vocab(train_gen_tgt, min_freq=args.min_word_freq)
     print('Finished building vocabulary.')
 
-    train_iterator, val_iterator, _ = data.Iterator.splits((train_gen, val_gen, _),
-                                                            sort_key=lambda x: len(x.src),
-                                                            batch_sizes=(32, 256, 256))
+    train_iterator, val_iterator, _ = data.BucketIterator.splits((training_data, validation_data, _),
+                                                                  sort_key=lambda x: len(x.src),
+                                                                  batch_sizes=(32, 256, 256))
+
     return src, tgt, train_iterator, val_iterator
 
 
