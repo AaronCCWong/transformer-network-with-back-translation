@@ -53,13 +53,14 @@ def build_dataset(args):
     train_gen_src = chain(multi30k_train_gen.src, iwslt_train_gen.src)
     train_gen_tgt = chain(multi30k_train_gen.tgt, iwslt_train_gen.tgt)
 
-    src.build_vocab(training_data.src, min_freq=args.min_word_freq)
-    tgt.build_vocab(training_data.tgt, min_freq=args.min_word_freq)
+    src.build_vocab(train_gen_src, min_freq=args.min_word_freq)
+    tgt.build_vocab(train_gen_tgt, min_freq=args.min_word_freq)
     print('Finished building vocabulary.')
 
     train_iterator, val_iterator, _ = data.BucketIterator.splits((training_data, validation_data, _),
                                                                   sort_key=lambda x: len(x.src),
                                                                   batch_sizes=(args.batch_size, 256, 256))
+
 
     return src, tgt, train_iterator, val_iterator
 
