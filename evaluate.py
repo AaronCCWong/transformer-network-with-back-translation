@@ -3,9 +3,11 @@ import math
 import spacy
 import torch
 import torchtext
+from itertools import chain
 from nltk.translate.bleu_score import corpus_bleu
 from tensorboardX import SummaryWriter
 from torchtext import data, datasets
+from tqdm import tqdm
 
 from transformer.transformer import Transformer
 from transformer.utils import CONSTANTS, cal_performance, padding_mask, subsequent_mask, get_tokenizer, build_file_extension
@@ -21,7 +23,7 @@ def test(model, test_iterator, src_vocab, tgt_vocab, args, writer):
     references = []
     hypotheses = []
     with torch.no_grad():
-        for batch_idx, batch in enumerate(test_iterator):
+        for batch_idx, batch in tqdm(enumerate(test_iterator), total=len(test_iterator)):
             device = args.device
             src = batch.src.transpose(0, 1).to(device)
             tgt = batch.tgt.transpose(0, 1).to(device)
@@ -68,9 +70,13 @@ def run(args):
                      eos_token=CONSTANTS['end'])
 
     print('Loading data splits...')
-    train_gen, _, _ = datasets.WMT14.splits(exts=(build_file_extension(args.src_language), build_file_extension(args.tgt_language)),
-                                            fields=(('src', src), ('tgt', tgt)),
-                                            filter_pred=lambda x: len(vars(x)['src']) <= args.max_seq_length and len(vars(x)['tgt']) <= args.max_seq_length)
+    multi30k_train_gen, multi30k_val_gen, _ = datasets.Multi30k.splits(exts=(build_file_extension(args.src_language), build_file_extension(args.tgt_language)),
+                                                                       fields=(('src', src), ('tgt', tgt)),
+                                                                       filter_pred=lambda x: len(vars(x)['src']) <= args.max_seq_length and len(vars(x)['tgt']) <= args.max_seq_length)
+
+    iwslt_train_gen, iwslt_val_gen, _ = datasets.IWSLT.splits(exts=(build_file_extension(args.src_language), build_file_extension(args.tgt_language)),
+                                                              fields=(('src', src), ('tgt', tgt)),
+                                                              filter_pred=lambda x: len(vars(x)['src']) <= args.max_seq_length and len(vars(x)['tgt']) <= args.max_seq_length)
 
     _, _, test_gen = datasets.Multi30k.splits(exts=(build_file_extension(args.src_language), build_file_extension(args.tgt_language)),
                                               fields=(('src', src), ('tgt', tgt)),
@@ -78,14 +84,17 @@ def run(args):
     print('Finished loading data splits.')
 
     print('Building vocabulary...')
-    src.build_vocab(train_gen.src, min_freq=args.min_word_freq)
-    tgt.build_vocab(train_gen.tgt, min_freq=args.min_word_freq)
+    train_gen_src = chain(multi30k_train_gen.src, iwslt_train_gen.src)
+    train_gen_tgt = chain(multi30k_train_gen.tgt, iwslt_train_gen.tgt)
+
+    src.build_vocab(train_gen_src, min_freq=args.min_word_freq)
+    tgt.build_vocab(train_gen_tgt, min_freq=args.min_word_freq)
     print('Finished building vocabulary.')
 
     src_vocab_size = len(src.vocab.itos)
     tgt_vocab_size = len(tgt.vocab.itos)
 
-    _, _, test_iterator = data.Iterator.splits((train_gen, _, test_gen),
+    _, _, test_iterator = data.Iterator.splits((_, _, test_gen),
                                                 sort_key=lambda x: len(x.src),
                                                 batch_sizes=(32, 256, 256))
 
@@ -109,14 +118,14 @@ if __name__ == "__main__":
                         help='maximum length of sentence to use (default: 50)')
     parser.add_argument('--min-word-freq', type=int, default=5,
                         help='minimum word frequency to be added to dictionary (default: 5)')
-    parser.add_argument('--no-cuda', action="store_true",
-                        help='run on cpu')
     parser.add_argument('--src-language', type=str, default='en',
                         help='the source language to translate from (default: en)')
     parser.add_argument('--tgt-language', type=str, default='de',
                         help='the source language to translate from (default: de)')
     parser.add_argument('--model', type=str, default='models/model_9.pth',
                         help='path to model parameters')
+    parser.add_argument('--no-cuda', action="store_true",
+                        help='run on cpu')
 
     args = parser.parse_args()
     args.device = torch.device('cuda' if torch.cuda.is_available() and not args.no_cuda else 'cpu')

@@ -98,10 +98,10 @@ def run(args):
     print('Starting training...')
     for epoch in range(args.epochs):
         train(model, epoch + 1, train_iterator, optimizer, src.vocab, tgt.vocab, args, writer)
-        validate(model, epoch + 1, val_iterator, src.vocab, tgt.vocab, args, writer)
         model_file = 'models/model_' + str(epoch) + '.pth'
         torch.save(model.state_dict(), model_file)
         print('Saved model to ' + model_file)
+        validate(model, epoch + 1, val_iterator, src.vocab, tgt.vocab, args, writer)
     print('Finished training.')
 
 
@@ -111,6 +111,8 @@ if __name__ == "__main__":
                         help='number of epochs to train for (default: 10)')
     parser.add_argument('--log-interval', type=int, default=100,
                         help='number of batches to wait before logging training stats (default: 100)')
+    parser.add_argument('--batch-size', type=int, default=32,
+                        help='batch size to use (default: 32)')
     parser.add_argument('--lr', type=float, default=1e-4,
                         help='learning rate of the decoder (default: 1e-4)')
     parser.add_argument('--dropout', type=float, default=0.1,
