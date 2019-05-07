@@ -45,6 +45,7 @@ def train(model, epoch, train_iterator, optimizer, src_vocab, tgt_vocab, args, w
     print('  - (Training)   ppl: {ppl: 8.5f}, accuracy: {accu:3.3f} %'.format(
           ppl=math.exp(losses / total_words), accu=100 * correct_words / total_words))
     writer.add_scalar('train_loss', losses / total_words, epoch)
+    return correct_words / total_words
 
 
 def validate(model, epoch, val_iterator, src_vocab, tgt_vocab, args, writer):
@@ -87,9 +88,12 @@ def run(args):
     model = Transformer(src_vocab_size, tgt_vocab_size, device, p_dropout=args.dropout)
     model = model.to(device)
 
-    for p in model.parameters():
-        if p.dim() > 1:
-            nn.init.xavier_uniform_(p)
+    if args.checkpoint:
+        model.load_state_dict(torch.load(args.checkpoint))
+    else:
+        for p in model.parameters():
+            if p.dim() > 1:
+                nn.init.xavier_uniform_(p)
 
     print('Model instantiated!')
 
@@ -97,8 +101,8 @@ def run(args):
 
     print('Starting training...')
     for epoch in range(args.epochs):
-        train(model, epoch + 1, train_iterator, optimizer, src.vocab, tgt.vocab, args, writer)
-        model_file = 'models/model_' + str(epoch) + '.pth'
+        acc = train(model, epoch + 1, train_iterator, optimizer, src.vocab, tgt.vocab, args, writer)
+        model_file = 'models/model_' + str(epoch) + '_' + str(acc) + '.pth'
         torch.save(model.state_dict(), model_file)
         print('Saved model to ' + model_file)
         validate(model, epoch + 1, val_iterator, src.vocab, tgt.vocab, args, writer)
@@ -113,7 +117,7 @@ if __name__ == "__main__":
                         help='number of batches to wait before logging training stats (default: 100)')
     parser.add_argument('--batch-size', type=int, default=32,
                         help='batch size to use (default: 32)')
-    parser.add_argument('--lr', type=float, default=1e-4,
+    parser.add_argument('--lr', type=float, default=1e-3,
                         help='learning rate of the decoder (default: 1e-4)')
     parser.add_argument('--dropout', type=float, default=0.1,
                         help='probability of dropout (default: 0.1)')
@@ -125,6 +129,8 @@ if __name__ == "__main__":
                         help='the source language to translate from (default: en)')
     parser.add_argument('--tgt-language', type=str, default='de',
                         help='the source language to translate from (default: de)')
+    parser.add_argument('--checkpoint', type=str, default=None,
+                        help='checkpoint file for model parameters')
     parser.add_argument('--no-cuda', action="store_true",
                         help='run on cpu')
 
