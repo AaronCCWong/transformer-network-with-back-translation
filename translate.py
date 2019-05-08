@@ -10,21 +10,25 @@ def run(args):
     with torch.no_grad():
         src, tgt, _, _ = build_dataset(args)
 
-        train_gen, _, _ = datasets.WMT14.splits(exts=(build_file_extension(args.src_language), build_file_extension(args.tgt_language)),
-                                                fields=(('src', src), ('tgt', tgt)),
-                                                filter_pred=lambda x: len(vars(x)['src']) <= args.max_seq_length and len(vars(x)['tgt']) <= args.max_seq_length)
+        # generator = data.TabularDataset.splits(path='data', train='train.csv',
+        #                                        format='csv', fields=(('src', src), ('tgt', tgt)),
+        #                                        filter_pred=lambda x: len(vars(x)['src']) <= args.max_seq_length)
 
-        data_iterator, _, _ = data.Iterator.splits((train_gen, _, _),
-                                                    sort_key=lambda x: len(x.src),
-                                                    batch_sizes=(64, 256, 256))
+        multi30k_train_gen, multi30k_val_gen, _ = datasets.Multi30k.splits(exts=(build_file_extension(args.src_language), build_file_extension(args.tgt_language)),
+                                                         fields=(('src', src), ('tgt', tgt)),
+                                                         filter_pred=lambda x: len(vars(x)['src']) <= args.max_seq_length and len(vars(x)['tgt']) <= args.max_seq_length)
+
+        data_iterator, _ = data.Iterator.splits((multi30k_train_gen, multi30k_val_gen),
+                                             sort_key=lambda x: len(x.src),
+                                             batch_sizes=(args.batch_size, 256, 256))
 
         src_vocab_size = len(src.vocab.itos)
         tgt_vocab_size = len(tgt.vocab.itos)
 
         translator = Translator(src.vocab, tgt.vocab, src_vocab_size, tgt_vocab_size, args)
 
-        with open('tgt.txt', 'w') as tgt_f:
-            with open('src.txt', 'w') as src_f:
+        with open('data/tgt.txt', 'w') as tgt_f:
+            with open('data/src.txt', 'w') as src_f:
                 for batch_idx, batch in enumerate(data_iterator):
                     tgt_seqs = batch.src.transpose(0, 1)
                     for idx_seqs in tgt_seqs:
@@ -42,6 +46,8 @@ def run(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Transformer Network')
+    parser.add_argument('--batch-size', type=int, default=32,
+                        help='batch size (default: 32)')
     parser.add_argument('--no-cuda', action="store_true",
                         help='run on cpu')
     parser.add_argument('--max-seq-length', type=int, default=50,

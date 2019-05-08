@@ -7,7 +7,6 @@ import torch.nn.functional as F
 import torch.optim as optim
 import torchtext
 from tensorboardX import SummaryWriter
-from torchtext import data, datasets
 from tqdm import tqdm
 
 from transformer.transformer import Transformer
@@ -83,7 +82,7 @@ def run(args):
     src_vocab_size = len(src.vocab.itos)
     tgt_vocab_size = len(tgt.vocab.itos)
 
-    print('Intstantiating model...')
+    print('Instantiating model...')
     device = args.device
     model = Transformer(src_vocab_size, tgt_vocab_size, device, p_dropout=args.dropout)
     model = model.to(device)

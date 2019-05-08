@@ -10,5 +10,6 @@ __pycache__
 .data
 .empty
 
+data/
 runs/
 models/*.pth
