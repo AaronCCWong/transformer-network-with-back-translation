@@ -10,7 +10,8 @@ from torchtext import data, datasets
 from tqdm import tqdm
 
 from transformer.transformer import Transformer
-from transformer.utils import CONSTANTS, cal_performance, padding_mask, subsequent_mask, get_tokenizer, build_file_extension
+from transformer.utils import (CONSTANTS, cal_performance, padding_mask, subsequent_mask,
+                               get_tokenizer, build_file_extension, build_dataset)
 
 
 def test(model, test_iterator, src_vocab, tgt_vocab, args, writer):
@@ -50,46 +51,20 @@ def test(model, test_iterator, src_vocab, tgt_vocab, args, writer):
                                    if idx != tgt_vocab.stoi[CONSTANTS['start']] and idx != tgt_vocab.stoi[CONSTANTS['pad']]])
 
     bleu_1 = corpus_bleu(references, hypotheses, weights=(1, 0, 0, 0))
-    print('  - (Test) ppl: {ppl: 8.5f}, accuracy: {accu:3.3f} %, BLEU: {bleu:3.3f}'.format(
-          ppl=math.exp(losses / total_words), accu=100 * correct_words / total_words, bleu=bleu_1))
+    bleu_2 = corpus_bleu(references, hypotheses, weights=(0.5, 0.5, 0, 0))
+    print('(Test) ppl: {ppl: 8.5f}, accuracy: {accu:3.3f}%, BLEU-1: {bleu1:3.3f}, BLEU-2: {bleu2:3.3f}'.format(
+          ppl=math.exp(losses / total_words), accu=100 * correct_words / total_words, bleu1=bleu_1, bleu2=bleu_2))
 
 
 def run(args):
     writer = SummaryWriter()
+    src, tgt, train_iterator, val_iterator = build_dataset(args)
 
-    print('Loading spacy language models...')
-    spacy_en = spacy.load('en_core_web_lg')
-    spacy_de = spacy.load('de_core_news_sm')
-    print('Finished loading spacy language models.')
-
-    src = data.Field(tokenize=get_tokenizer(args.src_language), lower=True, pad_token=CONSTANTS['pad'])
-    tgt = data.Field(tokenize=get_tokenizer(args.tgt_language),
-                     lower=True,
-                     init_token=CONSTANTS['start'],
-                     pad_token=CONSTANTS['pad'],
-                     eos_token=CONSTANTS['end'])
-
-    print('Loading data splits...')
-    multi30k_train_gen, multi30k_val_gen, _ = datasets.Multi30k.splits(exts=(build_file_extension(args.src_language), build_file_extension(args.tgt_language)),
-                                                                       fields=(('src', src), ('tgt', tgt)),
-                                                                       filter_pred=lambda x: len(vars(x)['src']) <= args.max_seq_length and len(vars(x)['tgt']) <= args.max_seq_length)
-
-    iwslt_train_gen, iwslt_val_gen, _ = datasets.IWSLT.splits(exts=(build_file_extension(args.src_language), build_file_extension(args.tgt_language)),
-                                                              fields=(('src', src), ('tgt', tgt)),
-                                                              filter_pred=lambda x: len(vars(x)['src']) <= args.max_seq_length and len(vars(x)['tgt']) <= args.max_seq_length)
-
+    print('Loading test data split.')
     _, _, test_gen = datasets.Multi30k.splits(exts=(build_file_extension(args.src_language), build_file_extension(args.tgt_language)),
                                               fields=(('src', src), ('tgt', tgt)),
                                               filter_pred=lambda x: len(vars(x)['src']) <= args.max_seq_length and len(vars(x)['tgt']) <= args.max_seq_length)
-    print('Finished loading data splits.')
-
-    print('Building vocabulary...')
-    train_gen_src = chain(multi30k_train_gen.src, iwslt_train_gen.src)
-    train_gen_tgt = chain(multi30k_train_gen.tgt, iwslt_train_gen.tgt)
-
-    src.build_vocab(train_gen_src, min_freq=args.min_word_freq)
-    tgt.build_vocab(train_gen_tgt, min_freq=args.min_word_freq)
-    print('Finished building vocabulary.')
+    print('Finished loading test data split.')
 
     src_vocab_size = len(src.vocab.itos)
     tgt_vocab_size = len(tgt.vocab.itos)
@@ -112,6 +87,8 @@ def run(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Transformer Network')
+    parser.add_argument('--batch-size', type=int, default=32,
+                        help='batch size (default: 32)')
     parser.add_argument('--dropout', type=float, default=0.1,
                         help='probability of dropout (default: 0.1)')
     parser.add_argument('--max-seq-length', type=int, default=50,
@@ -122,7 +99,7 @@ if __name__ == "__main__":
                         help='the source language to translate from (default: en)')
     parser.add_argument('--tgt-language', type=str, default='de',
                         help='the source language to translate from (default: de)')
-    parser.add_argument('--model', type=str, default='models/model_9.pth',
+    parser.add_argument('--model', type=str, required=True,
                         help='path to model parameters')
     parser.add_argument('--no-cuda', action="store_true",
                         help='run on cpu')
