@@ -10,15 +10,11 @@ def run(args):
     with torch.no_grad():
         src, tgt, _, _ = build_dataset(args)
 
-        # generator = data.TabularDataset.splits(path='data', train='train.csv',
-        #                                        format='csv', fields=(('src', src), ('tgt', tgt)),
-        #                                        filter_pred=lambda x: len(vars(x)['src']) <= args.max_seq_length)
+        _, _, test_split = datasets.IWSLT.splits(exts=(build_file_extension(args.src_language), build_file_extension(args.tgt_language)),
+                                                       fields=(('src', src), ('tgt', tgt)),
+                                                       filter_pred=lambda x: len(vars(x)['src']) <= args.max_seq_length and len(vars(x)['tgt']) <= args.max_seq_length)
 
-        multi30k_train_gen, multi30k_val_gen, _ = datasets.Multi30k.splits(exts=(build_file_extension(args.src_language), build_file_extension(args.tgt_language)),
-                                                         fields=(('src', src), ('tgt', tgt)),
-                                                         filter_pred=lambda x: len(vars(x)['src']) <= args.max_seq_length and len(vars(x)['tgt']) <= args.max_seq_length)
-
-        data_iterator, _ = data.Iterator.splits((multi30k_train_gen, multi30k_val_gen),
+        data_iterator, _ = data.Iterator.splits((test_split, _),
                                              sort_key=lambda x: len(x.src),
                                              batch_sizes=(args.batch_size, 256, 256))
 

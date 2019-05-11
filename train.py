@@ -9,6 +9,7 @@ import torchtext
 from tensorboardX import SummaryWriter
 from tqdm import tqdm
 
+from optimizer import StepOptimizer
 from transformer.transformer import Transformer
 from transformer.utils import (CONSTANTS, cal_performance, padding_mask,
                                subsequent_mask, get_tokenizer, build_file_extension,
@@ -96,7 +97,8 @@ def run(args):
 
     print('Model instantiated!')
 
-    optimizer = optim.Adam(model.parameters(), lr=args.lr, betas=(0.9, 0.98), eps=1e-9)
+    optimizer = optim.Adam(model.parameters(), lr=0, betas=(0.9, 0.98), eps=1e-9)
+    optimizer = StepOptimizer(optimizer, args.warmup, 2)
 
     print('Starting training...')
     for epoch in range(args.epochs):
@@ -116,8 +118,6 @@ if __name__ == "__main__":
                         help='number of batches to wait before logging training stats (default: 100)')
     parser.add_argument('--batch-size', type=int, default=32,
                         help='batch size to use (default: 32)')
-    parser.add_argument('--lr', type=float, default=1e-3,
-                        help='learning rate of the decoder (default: 1e-4)')
     parser.add_argument('--dropout', type=float, default=0.1,
                         help='probability of dropout (default: 0.1)')
     parser.add_argument('--max-seq-length', type=int, default=50,
@@ -130,6 +130,8 @@ if __name__ == "__main__":
                         help='the source language to translate from (default: de)')
     parser.add_argument('--checkpoint', type=str, default=None,
                         help='checkpoint file for model parameters')
+    parser.add_argument('--warmup', type=int, default=3000,
+                        help='number of warmup steps to take')
     parser.add_argument('--no-cuda', action="store_true",
                         help='run on cpu')
 
