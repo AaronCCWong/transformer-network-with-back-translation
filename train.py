@@ -88,7 +88,7 @@ def run(args):
     model = Transformer(src_vocab_size, tgt_vocab_size, device, p_dropout=args.dropout)
     model = model.to(device)
 
-    if args.checkpoint:
+    if args.checkpoint is not None:
         model.load_state_dict(torch.load(args.checkpoint))
     else:
         for p in model.parameters():
@@ -116,8 +116,8 @@ if __name__ == "__main__":
     parser.add_argument('--log-interval', type=int, default=100,
                         help='number of batches to wait before logging training stats (default: 100)')
     parser.add_argument('--batch-size', type=int, default=32,
-                        help='batch size to use (default: 32)')
-    parser.add_argument('--lr', type=float, default=1e-3,
+                        help='batch size to use (default: 64)')
+    parser.add_argument('--lr', type=float, default=1e-4,
                         help='learning rate of the decoder (default: 1e-4)')
     parser.add_argument('--dropout', type=float, default=0.1,
                         help='probability of dropout (default: 0.1)')

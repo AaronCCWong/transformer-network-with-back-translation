@@ -58,7 +58,7 @@ def test(model, test_iterator, src_vocab, tgt_vocab, args, writer):
 
 def run(args):
     writer = SummaryWriter()
-    src, tgt, train_iterator, val_iterator = build_dataset(args)
+    src, tgt, _, _ = build_dataset(args)
 
     print('Loading test data split.')
     _, _, test_gen = datasets.Multi30k.splits(exts=(build_file_extension(args.src_language), build_file_extension(args.tgt_language)),
@@ -71,9 +71,9 @@ def run(args):
 
     _, _, test_iterator = data.Iterator.splits((_, _, test_gen),
                                                 sort_key=lambda x: len(x.src),
-                                                batch_sizes=(32, 256, 256))
+                                                batch_sizes=(args.batch_size, args.batch_size, args.batch_size))
 
-    print('Intstantiating model...')
+    print('Instantiating model...')
     device = args.device
     model = Transformer(src_vocab_size, tgt_vocab_size, device, p_dropout=args.dropout)
     model = model.to(device)

@@ -42,7 +42,11 @@ def build_dataset(args):
                                                               fields=(('src', src), ('tgt', tgt)),
                                                               filter_pred=lambda x: len(vars(x)['src']) <= args.max_seq_length and len(vars(x)['tgt']) <= args.max_seq_length)
 
-    training_examples = multi30k_train_gen.examples + iwslt_train_gen.examples
+    backt_gen  = data.TabularDataset.splits(path='data', train='train.csv', format='csv',
+                                            fields=(('src', src), ('tgt', tgt)),
+                                            filter_pred=lambda x: len(vars(x)['src']) <= args.max_seq_length and len(vars(x)['tgt']) <= args.max_seq_length)[0]
+
+    training_examples = multi30k_train_gen.examples + iwslt_train_gen.examples + backt_gen.examples
     validation_examples = multi30k_val_gen.examples + iwslt_val_gen.examples
 
     training_data = data.Dataset(training_examples, multi30k_train_gen.fields)
@@ -59,7 +63,7 @@ def build_dataset(args):
 
     train_iterator, val_iterator, _ = data.BucketIterator.splits((training_data, validation_data, _),
                                                                   sort_key=lambda x: len(x.src),
-                                                                  batch_sizes=(args.batch_size, 256, 256))
+                                                                  batch_sizes=(args.batch_size, args.batch_size, args.batch_size))
 
 
     return src, tgt, train_iterator, val_iterator

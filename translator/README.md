@@ -1,0 +1,1 @@
+Credits for this goes to https://github.com/jadore801120/attention-is-all-you-need-pytorch. I repurposed the implementation found in that repository to work with my transformer network.
