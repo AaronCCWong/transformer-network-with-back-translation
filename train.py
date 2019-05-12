@@ -41,7 +41,7 @@ def train(model, epoch, train_iterator, optimizer, src_vocab, tgt_vocab, args, w
         total_words += tgt[:, 1:].ne(tgt_vocab.stoi[CONSTANTS['pad']]).sum().item()
         correct_words += n_correct
 
-    print('  - (Training)   ppl: {ppl: 8.5f}, accuracy: {accu:3.3f} %'.format(
+    print('(Training) ppl: {ppl: 8.5f}, accuracy: {accu:3.3f} %'.format(
           ppl=math.exp(losses / total_words), accu=100 * correct_words / total_words))
     writer.add_scalar('train_loss', losses / total_words, epoch)
     return correct_words / total_words
@@ -70,7 +70,7 @@ def validate(model, epoch, val_iterator, src_vocab, tgt_vocab, args, writer):
             total_words += tgt[:, 1:].ne(tgt_vocab.stoi[CONSTANTS['pad']]).sum().item()
             correct_words += n_correct
 
-    print('  - (Validation) ppl: {ppl: 8.5f}, accuracy: {accu:3.3f} %'.format(
+    print('(Validation) ppl: {ppl: 8.5f}, accuracy: {accu:3.3f} %'.format(
           ppl=math.exp(losses / total_words), accu=100 * correct_words / total_words))
     writer.add_scalar('val_loss', losses / total_words, epoch)
 

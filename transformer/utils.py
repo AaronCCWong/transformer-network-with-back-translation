@@ -65,7 +65,6 @@ def build_dataset(args):
                                                                   sort_key=lambda x: len(x.src),
                                                                   batch_sizes=(args.batch_size, args.batch_size, args.batch_size))
 
-
     return src, tgt, train_iterator, val_iterator
 
 
@@ -99,13 +98,11 @@ def get_tokenizer(language):
 def padding_mask(seq, src_vocab):
     return (seq != src_vocab.stoi[CONSTANTS['pad']]).unsqueeze(-2)
 
-import numpy as np
 
 def subsequent_mask(seq):
     rows, cols = seq.size()
-    mask = np.triu(np.ones((1, cols, cols)), k=1)
-    # mask = torch.triu(torch.ones((rows, cols), dtype=torch.uint8), diagonal=1)
-    return torch.from_numpy(mask) == 0
+    mask = torch.triu(torch.ones((rows, cols), dtype=torch.uint8), diagonal=1)
+    return (mask == 0).unsqueeze(-2)
 
 
 def tokenize(spacy):
