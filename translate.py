@@ -16,15 +16,15 @@ def run(args):
 
         _, _, test_iterator = data.Iterator.splits((_, _, test_gen),
                                                     sort_key=lambda x: len(x.src),
-                                                    batch_sizes=(64, 256, 256))
+                                                    batch_sizes=(args.batch_size, args.batch_size, args.batch_size))
 
         src_vocab_size = len(src.vocab.itos)
         tgt_vocab_size = len(tgt.vocab.itos)
 
         translator = Translator(src.vocab, tgt.vocab, src_vocab_size, tgt_vocab_size, args)
 
-        with open('tgt.txt', 'w') as tgt_f:
-            with open('src.txt', 'w') as src_f:
+        with open('data/tgt.txt', 'w') as tgt_f:
+            with open('data/src.txt', 'w') as src_f:
                 for batch_idx, batch in enumerate(test_iterator):
                     tgt_seqs = batch.src.transpose(0, 1)
                     for idx_seqs in tgt_seqs:
@@ -42,6 +42,8 @@ def run(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Transformer Network')
+    parser.add_argument('--batch-size', type=int, default=32,
+                        help='batch size (default: 32)')
     parser.add_argument('--no-cuda', action="store_true",
                         help='run on cpu')
     parser.add_argument('--max-seq-length', type=int, default=50,

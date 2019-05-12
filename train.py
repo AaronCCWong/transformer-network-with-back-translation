@@ -7,9 +7,9 @@ import torch.nn.functional as F
 import torch.optim as optim
 import torchtext
 from tensorboardX import SummaryWriter
-from torchtext import data, datasets
 from tqdm import tqdm
 
+from optimizer import StepOptimizer
 from transformer.transformer import Transformer
 from transformer.utils import (CONSTANTS, cal_performance, padding_mask,
                                subsequent_mask, get_tokenizer, build_file_extension,
@@ -83,7 +83,7 @@ def run(args):
     src_vocab_size = len(src.vocab.itos)
     tgt_vocab_size = len(tgt.vocab.itos)
 
-    print('Intstantiating model...')
+    print('Instantiating model...')
     device = args.device
     model = Transformer(src_vocab_size, tgt_vocab_size, device, p_dropout=args.dropout)
     model = model.to(device)
@@ -98,6 +98,7 @@ def run(args):
     print('Model instantiated!')
 
     optimizer = optim.Adam(model.parameters(), lr=args.lr, betas=(0.9, 0.98), eps=1e-9)
+    optimizer = StepOptimizer(optimizer, args.warmup, 2)
 
     print('Starting training...')
     for epoch in range(args.epochs):
@@ -115,7 +116,7 @@ if __name__ == "__main__":
                         help='number of epochs to train for (default: 10)')
     parser.add_argument('--log-interval', type=int, default=100,
                         help='number of batches to wait before logging training stats (default: 100)')
-    parser.add_argument('--batch-size', type=int, default=32,
+    parser.add_argument('--batch-size', type=int, default=64,
                         help='batch size to use (default: 64)')
     parser.add_argument('--lr', type=float, default=1e-4,
                         help='learning rate of the decoder (default: 1e-4)')
@@ -131,6 +132,8 @@ if __name__ == "__main__":
                         help='the source language to translate from (default: de)')
     parser.add_argument('--checkpoint', type=str, default=None,
                         help='checkpoint file for model parameters')
+    parser.add_argument('--warmup', type=int, default=3000,
+                        help='number of warmup steps to take')
     parser.add_argument('--no-cuda', action="store_true",
                         help='run on cpu')
 
