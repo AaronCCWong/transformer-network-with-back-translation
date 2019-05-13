@@ -22,3 +22,11 @@ Some configurations to `translate.py` are required to translate custom sentences
 ### To preprocess:
 
 `preprocess.py` sets up the translations from `translate.py` to be importable by TorchText.
+
+### Model Weights:
+
+Download the weights from here
+
+https://drive.google.com/file/d/1AGG5sdyEPr9uCSv-1KXnFkIk-qYnlClW/view?usp=sharing
+
+and extract them into `models/` directory.
